@@ -21,7 +21,6 @@ export function GameplayScreen() {
   const [paused, setPaused] = useState(false);
   const swipeStartY = useRef<number | null>(null);
   const phase = hud.phase;
-  phaseRef.current = phase;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,7 +36,10 @@ export function GameplayScreen() {
         upgrades: save.upgrades,
       },
       {
-        onHud: (h) => setHud(h),
+        onHud: (h) => {
+          phaseRef.current = h.phase;
+          setHud(h);
+        },
         onFlightComplete: (stats) => {
           if (qualityRef.current) {
             completeRun(qualityRef.current, stats);

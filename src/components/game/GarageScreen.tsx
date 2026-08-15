@@ -9,7 +9,6 @@ import {
   cosmeticsByCategory,
   upgradeCost,
   upgradeDef,
-  upgradeStat,
   upgradeStatText,
 } from "@/game/config";
 import { useGame } from "@/game/GameContext";
@@ -46,8 +45,6 @@ function UpgradeCard({ group, id }: { group: UpgradeGroup; id: string }) {
   const maxed = level >= MAX_UPGRADE_LEVEL;
   const cost = maxed ? 0 : upgradeCost(def, level);
   const afford = save.player.coins >= cost;
-  const current = upgradeStat(def, level);
-  const next = upgradeStat(def, level + 1);
 
   return (
     <motion.div

@@ -366,7 +366,7 @@ export class GameRenderer {
         break;
       }
       case "building": {
-        let rate = this.engineRunning ? (this.holding ? RPM_AUTO_RISE + RPM_HOLD_BONUS : RPM_SLOW_RISE) : -RPM_DECAY;
+        const rate = this.engineRunning ? (this.holding ? RPM_AUTO_RISE + RPM_HOLD_BONUS : RPM_SLOW_RISE) : -RPM_DECAY;
         if (!this.engineRunning && this.rpm <= 0) {
           this.phase = "idle";
           this.camZoomTarget = 1;

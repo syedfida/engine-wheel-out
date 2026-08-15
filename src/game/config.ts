@@ -11,7 +11,6 @@ import type {
   SaveData,
   Settings,
   UpgradeGroup,
-  UpgradeId,
   UpgradeLevels,
   WheelUpgradeId,
   ZoneId,
