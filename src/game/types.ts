@@ -38,16 +38,26 @@ export type EngineUpgradeId =
   | "rpmControl"
   | "efficiency"
   | "cooling"
-  | "launchBonus";
+  | "launchBonus"
+  | "turbo"
+  | "fuel";
 
 export type WheelUpgradeId =
   | "stability"
   | "control"
   | "bounce"
   | "airControl"
-  | "durability";
+  | "durability"
+  | "grip"
+  | "gyro";
 
-export type RampUpgradeId = "launchBonus" | "accuracy" | "stability" | "comboBonus";
+export type RampUpgradeId =
+  | "launchBonus"
+  | "accuracy"
+  | "stability"
+  | "comboBonus"
+  | "kick"
+  | "rail";
 
 export type UpgradeId = EngineUpgradeId | WheelUpgradeId | RampUpgradeId;
 export type UpgradeGroup = "engine" | "wheel" | "ramp";
@@ -84,6 +94,7 @@ export interface HighScores {
   totalDistance: number;
   totalLaunches: number;
   totalPerfect: number;
+  totalOverdrive: number;
   totalRecordBreaks: number;
 }
 

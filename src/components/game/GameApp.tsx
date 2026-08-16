@@ -1,7 +1,9 @@
 import { useEffect } from "react";
+import { ConvexProvider } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { audio } from "@/game/audio";
 import { GameProvider, useGame } from "@/game/GameContext";
+import { convexClient } from "@/lib/convex";
 import type { Toast } from "@/game/types";
 import { cn } from "@/lib/utils";
 import { GameplayScreen } from "./GameplayScreen";
@@ -109,7 +111,13 @@ function GameInner() {
 export function GameApp() {
   return (
     <GameProvider>
-      <GameInner />
+      {convexClient ? (
+        <ConvexProvider client={convexClient}>
+          <GameInner />
+        </ConvexProvider>
+      ) : (
+        <GameInner />
+      )}
     </GameProvider>
   );
 }

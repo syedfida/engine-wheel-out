@@ -182,6 +182,9 @@ export function ResultScreen() {
               🏠 HOME
             </GameButton>
           </div>
+          <GameButton variant="ghost" onClick={() => go("leaderboard")}>
+            🏆 JOIN THE LEADERBOARD
+          </GameButton>
         </div>
       </div>
     </div>

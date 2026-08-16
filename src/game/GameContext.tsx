@@ -121,8 +121,9 @@ function reducer(state: GameState, action: Action): GameState {
         },
       ];
       if (def.rewardCosmetic && !save.cosmetics.owned.includes(def.rewardCosmetic)) {
+        const cosmeticDef = cosmeticById(def.rewardCosmetic);
         save.cosmetics.owned.push(def.rewardCosmetic);
-        save.cosmetics.equipped.trail = def.rewardCosmetic;
+        if (cosmeticDef) save.cosmetics.equipped[cosmeticDef.category] = def.rewardCosmetic;
         toasts.push({
           id: uid("cosmetic"),
           kind: "info",

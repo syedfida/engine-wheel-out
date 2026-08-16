@@ -39,8 +39,8 @@ export interface FlightState {
 
 export function startFlight(power: number, upgrades: UpgradeLevels, startY = 0): FlightState {
   const s: EffectiveStats = effectiveStats(upgrades);
-  const vx = BASE_VX + power * VX_POWER + s.rampLaunch * 2.4 + s.power * 1.2;
-  const vy = BASE_VY + power * VY_POWER + s.bounce * 1.8;
+  const vx = BASE_VX + power * VX_POWER + s.rampLaunch * 2.4 + s.power * 1.2 + s.rail * 3.2;
+  const vy = BASE_VY + power * VY_POWER + s.bounce * 1.8 + s.kick * 3;
   return {
     x: 0,
     y: Math.max(0, startY),
@@ -123,9 +123,9 @@ export function stepFlight(
       fs.onGround = false;
     } else {
       // rolling / soft landing — strong ground friction, the wheel
-      // stops rolling within ~1 second
+      // stops rolling within ~1 second (Grip Pads keep it rolling longer)
       fs.vy = 0;
-      fs.vx *= Math.max(0, 1 - 2.2 * dt);
+      fs.vx *= Math.max(0, 1 - 2.2 * dt * (1 - s.grip));
       result.hitGround = true;
     }
   }

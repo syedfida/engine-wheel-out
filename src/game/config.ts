@@ -23,7 +23,7 @@ export const SAVE_KEY = "ewop.save.v1";
 export const SAVE_VERSION = 1;
 
 export const STARTING_COINS = 500;
-export const MAX_PLAYER_LEVEL = 30;
+export const MAX_PLAYER_LEVEL = 50;
 export const MAX_UPGRADE_LEVEL = 10;
 export const LEVEL_UP_REWARD = 150; // coins per level gained
 
@@ -133,6 +133,8 @@ export const ENGINE_UPGRADES: EngineUpgradeId[] = [
   "efficiency",
   "cooling",
   "launchBonus",
+  "turbo",
+  "fuel",
 ];
 export const WHEEL_UPGRADES: WheelUpgradeId[] = [
   "stability",
@@ -140,8 +142,17 @@ export const WHEEL_UPGRADES: WheelUpgradeId[] = [
   "bounce",
   "airControl",
   "durability",
+  "grip",
+  "gyro",
 ];
-export const RAMP_UPGRADES: RampUpgradeId[] = ["launchBonus", "accuracy", "stability", "comboBonus"];
+export const RAMP_UPGRADES: RampUpgradeId[] = [
+  "launchBonus",
+  "accuracy",
+  "stability",
+  "comboBonus",
+  "kick",
+  "rail",
+];
 
 export const UPGRADE_DEFS: Record<UpgradeGroup, Record<string, UpgradeDef>> = {
   engine: {
@@ -150,6 +161,8 @@ export const UPGRADE_DEFS: Record<UpgradeGroup, Record<string, UpgradeDef>> = {
     efficiency: { id: "engine.efficiency", group: "engine", name: "EFFICIENCY", desc: "More coins and XP from every launch.", baseCost: 350, icon: "⚙️", statLabel: "Efficiency", statUnit: "%" },
     cooling: { id: "engine.cooling", group: "engine", name: "COOLING", desc: "Reduces overdrive backfire risk.", baseCost: 300, icon: "❄️", statLabel: "Cooling", statUnit: "%" },
     launchBonus: { id: "engine.launchBonus", group: "engine", name: "LAUNCH BONUS", desc: "Extra kick at the moment of launch.", baseCost: 400, icon: "🚀", statLabel: "Launch", statUnit: "%" },
+    turbo: { id: "engine.turbo", group: "engine", name: "TURBO KIT", desc: "Overdrive launches hit dramatically harder.", baseCost: 460, icon: "💨", statLabel: "Turbo", statUnit: "%" },
+    fuel: { id: "engine.fuel", group: "engine", name: "FUEL INJECTION", desc: "Engine revs build faster — shorter warm-ups.", baseCost: 320, icon: "⛽", statLabel: "Rev", statUnit: "%" },
   },
   wheel: {
     stability: { id: "wheel.stability", group: "wheel", name: "STABILITY", desc: "Straighter, calmer flight trajectory.", baseCost: 300, icon: "🛞", statLabel: "Stability", statUnit: "%" },
@@ -157,12 +170,16 @@ export const UPGRADE_DEFS: Record<UpgradeGroup, Record<string, UpgradeDef>> = {
     bounce: { id: "wheel.bounce", group: "wheel", name: "BOUNCE", desc: "The wheel bounces higher and keeps energy.", baseCost: 320, icon: "🏀", statLabel: "Bounce", statUnit: "%" },
     airControl: { id: "wheel.airControl", group: "wheel", name: "AIR CONTROL", desc: "More time holding the wheel in the air.", baseCost: 300, icon: "🌪️", statLabel: "Air Time", statUnit: "s" },
     durability: { id: "wheel.durability", group: "wheel", name: "DURABILITY", desc: "Less speed lost on impact with the ground.", baseCost: 320, icon: "🛡️", statLabel: "Durability", statUnit: "%" },
+    grip: { id: "wheel.grip", group: "wheel", name: "GRIP PADS", desc: "The wheel rolls further after touching down.", baseCost: 300, icon: "🧲", statLabel: "Grip", statUnit: "%" },
+    gyro: { id: "wheel.gyro", group: "wheel", name: "GYRO HUB", desc: "Stronger swipe-up air boosts mid-flight.", baseCost: 350, icon: "🛰️", statLabel: "Boost", statUnit: "%" },
   },
   ramp: {
     launchBonus: { id: "ramp.launchBonus", group: "ramp", name: "RAMP LAUNCH", desc: "The ramp throws the wheel further.", baseCost: 400, icon: "📐", statLabel: "Launch", statUnit: "%" },
     accuracy: { id: "ramp.accuracy", group: "ramp", name: "RAMP ACCURACY", desc: "Wider perfect-timing window and accuracy.", baseCost: 350, icon: "🎯", statLabel: "Accuracy", statUnit: "%" },
     stability: { id: "ramp.stability", group: "ramp", name: "RAMP STABILITY", desc: "Consistent launches, less random variation.", baseCost: 300, icon: "🧱", statLabel: "Stability", statUnit: "%" },
     comboBonus: { id: "ramp.comboBonus", group: "ramp", name: "COMBO BONUS", desc: "Bigger score bonus per combo level.", baseCost: 350, icon: "⚡", statLabel: "Combo", statUnit: "pts" },
+    kick: { id: "ramp.kick", group: "ramp", name: "RAMP KICK", desc: "Extra vertical lift at the moment of launch.", baseCost: 360, icon: "🦵", statLabel: "Kick", statUnit: "%" },
+    rail: { id: "ramp.rail", group: "ramp", name: "RAIL GUIDE", desc: "The ramp flings the wheel further downrange.", baseCost: 380, icon: "🛤️", statLabel: "Range", statUnit: "%" },
   },
 };
 
@@ -192,6 +209,12 @@ export function upgradeStat(def: UpgradeDef, level: number): number {
     case "ramp.accuracy": return Math.round(2.5 * lv * 10) / 10;
     case "ramp.stability": return 7 * lv;
     case "ramp.comboBonus": return 15 * lv;
+    case "engine.turbo": return 5 * lv;
+    case "engine.fuel": return 5 * lv;
+    case "wheel.grip": return 7 * lv;
+    case "wheel.gyro": return 6 * lv;
+    case "ramp.kick": return 4 * lv;
+    case "ramp.rail": return 3 * lv;
     default: return 0;
   }
 }
@@ -247,6 +270,25 @@ export const COSMETICS: CosmeticDef[] = [
   { id: "engine_chrome", category: "engine", name: "CHROME BLOCK", price: 900, desc: "Mirror-shine casing." },
   { id: "engine_carbon", category: "engine", name: "CARBON BLOCK", price: 1600, desc: "Dark matte muscle." },
   { id: "engine_gold", category: "engine", name: "GOLD BLOCK", price: 3000, desc: "Painted in victory gold." },
+  // --- v1.1 additions ---
+  { id: "wheel_crimson", category: "wheel", name: "CRIMSON HAWK", price: 1400, desc: "Blood-red rubber for hot-blooded runs." },
+  { id: "wheel_candy", category: "wheel", name: "CANDY POP", price: 2000, desc: "Pastel pink with a neon cyan ring." },
+  { id: "wheel_obsidian", category: "wheel", name: "OBSIDIAN", price: 2200, desc: "Near-black glass with silver blades." },
+  { id: "wheel_rainbow", category: "wheel", name: "PRISM RING", price: 3000, desc: "Spins every color of the spectrum." },
+  { id: "rim_cross", category: "rim", name: "CROSS LACE", price: 700, desc: "A classic cross-spoke pattern." },
+  { id: "rim_disc", category: "rim", name: "DISC BRAKE", price: 1100, desc: "Solid disc with cooling vents." },
+  { id: "rim_ring", category: "rim", name: "TRIPLE RING", price: 1600, desc: "Three spinning rings, one hub." },
+  { id: "trail_sky", category: "trail", name: "SKY FIRE", price: 1200, desc: "A cool blue flame ribbon." },
+  { id: "trail_neon", category: "trail", name: "NEON RIBBON", price: 1600, desc: "Magenta glow that cuts the night." },
+  { id: "trail_rainbow", category: "trail", name: "PRISM TAIL", price: 2400, desc: "A cycling rainbow comet tail. Also a Point Millionaire reward." },
+  { id: "dust_neon", category: "dust", name: "NEON HAZE", price: 1000, desc: "Purple haze where the wheel lands." },
+  { id: "dust_snow", category: "dust", name: "PEARL DUST", price: 1300, desc: "Bright white powder clouds." },
+  { id: "decal_flag", category: "decal", name: "CRESCENT FLAG", price: 1200, desc: "Green field, white crescent and star." },
+  { id: "decal_wing", category: "decal", name: "WING DECAL", price: 1500, desc: "Twin wings on the hub." },
+  { id: "decal_skull", category: "decal", name: "SKULL DECAL", price: 1800, desc: "A grinning hub skull." },
+  { id: "engine_blue", category: "engine", name: "BLUE FLAME", price: 1400, desc: "Cool blue block with a hot heart." },
+  { id: "engine_red", category: "engine", name: "RACER RED", price: 1100, desc: "Classic racing red livery." },
+  { id: "engine_neon", category: "engine", name: "NEON CORE", price: 2200, desc: "Glowing cyan internals, dark shell." },
 ];
 
 export function cosmeticsByCategory(category: CosmeticCategory): CosmeticDef[] {
@@ -389,6 +431,40 @@ export const LOCATIONS: LocationDef[] = [
       musicRoot: 138.59, musicScale: [0, 2, 4, 7, 9, 12, 14],
     },
   },
+  {
+    id: "coastal",
+    name: "COASTAL ROAD",
+    tagline: "Salt breeze and palm shadows.",
+    unlockText: "Reach 1,500 m best distance",
+    unlocked: (s) => s.highScores.bestDistance >= 1500,
+    visual: {
+      id: "coastal",
+      skyTop: "#2f8f9e", skyBottom: "#cdeef0", horizon: "#e7d9b0",
+      sun: "#ffe08a", sunGlow: "rgba(255, 235, 170, 0.45)", stars: false, moon: false, fog: 0.1,
+      mountainFar: ["#4f8f9a", "#3f7d88"], mountainNear: ["#2f6b5e", "#27594f"],
+      field: "#5fae8f", fieldDark: "#4a9378", road: "#d9c9a0",
+      tree: "#2e6b4f", building: "#f2e3c8", buildingRoof: "#d98a4a",
+      dust: "rgba(230, 210, 160, 0.8)", glow: "rgba(190, 240, 235, 0.12)",
+      musicRoot: 220.0, musicScale: [0, 2, 4, 7, 9, 12, 14],
+    },
+  },
+  {
+    id: "snow",
+    name: "SNOW PEAK",
+    tagline: "Frozen passes, silent skies.",
+    unlockText: "Reach player level 25",
+    unlocked: (s) => s.player.level >= 25,
+    visual: {
+      id: "snow",
+      skyTop: "#7fb3d9", skyBottom: "#e8f4fb", horizon: "#dfe9ee",
+      sun: "#ffffff", sunGlow: "rgba(255, 255, 255, 0.5)", stars: false, moon: false, fog: 0.3,
+      mountainFar: ["#b9cbd9", "#a3bac9"], mountainNear: ["#8fa6b5", "#7a93a3"],
+      field: "#d7e4ea", fieldDark: "#c2d3db", road: "#9fb2bd",
+      tree: "#5f7d8a", building: "#e6eef2", buildingRoof: "#8aa0ad",
+      dust: "rgba(220, 232, 238, 0.8)", glow: "rgba(220, 240, 255, 0.12)",
+      musicRoot: 261.63, musicScale: [0, 2, 3, 7, 8, 10, 12],
+    },
+  },
 ];
 
 export function locationById(id: string): LocationDef {
@@ -414,6 +490,19 @@ export const MISSIONS: MissionDef[] = [
   { id: "record_breaker", name: "RECORD BREAKER", desc: "Beat your personal record.", target: 1, rewardCoins: 1500 },
   { id: "long_journey", name: "LONG JOURNEY", desc: "Complete 10 launches.", target: 10, rewardCoins: 2000 },
   { id: "point_master", name: "POINT MASTER", desc: "Reach 10,000 total points.", target: 10000, rewardCoins: 1000, rewardCosmetic: "trail_gold" },
+  // --- v1.1 additions ---
+  { id: "launch_rookie", name: "LAUNCH ROOKIE", desc: "Complete 3 launches.", target: 3, rewardCoins: 500 },
+  { id: "height_hunter", name: "HEIGHT HUNTER", desc: "Reach 200 m in a single launch.", target: 200, rewardCoins: 1000 },
+  { id: "air_ace", name: "AIR TIME ACE", desc: "Stay airborne for 5 s in one launch.", target: 5, rewardCoins: 1000 },
+  { id: "speed_runner", name: "SPEED RUNNER", desc: "Hit 110 m/s fictional top speed.", target: 110, rewardCoins: 1500 },
+  { id: "distance_champion", name: "DISTANCE CHAMPION", desc: "Reach 1,000 m in a single launch.", target: 1000, rewardCoins: 1500 },
+  { id: "upgrade_enthusiast", name: "UPGRADE ENTHUSIAST", desc: "Purchase 5 upgrades.", target: 5, rewardCoins: 1200 },
+  { id: "upgrade_collector", name: "UPGRADE COLLECTOR", desc: "Purchase 15 upgrades.", target: 15, rewardCoins: 2500 },
+  { id: "score_seeker", name: "SCORE SEEKER", desc: "Reach 25,000 total points.", target: 25000, rewardCoins: 2000 },
+  { id: "record_hunter", name: "RECORD HUNTER", desc: "Beat a personal record 5 times.", target: 5, rewardCoins: 2000 },
+  { id: "perfect_master", name: "PERFECT MASTER", desc: "Perform 20 accurate (95%+) launches.", target: 20, rewardCoins: 2500 },
+  { id: "wheel_legend", name: "WHEEL LEGEND", desc: "Complete 25 launches.", target: 25, rewardCoins: 2500 },
+  { id: "point_millionaire", name: "POINT MILLIONAIRE", desc: "Reach 100,000 total points.", target: 100000, rewardCoins: 5000, rewardCosmetic: "trail_rainbow" },
 ];
 
 export function missionProgress(save: SaveData, id: string): number {
@@ -425,6 +514,18 @@ export function missionProgress(save: SaveData, id: string): number {
     case "record_breaker": return save.highScores.totalRecordBreaks;
     case "long_journey": return save.highScores.totalLaunches;
     case "point_master": return save.highScores.totalScore;
+    case "launch_rookie": return save.highScores.totalLaunches;
+    case "height_hunter": return save.highScores.bestHeight;
+    case "air_ace": return Math.round(save.highScores.bestAirTime);
+    case "speed_runner": return save.highScores.bestSpeed;
+    case "distance_champion": return save.highScores.bestDistance;
+    case "upgrade_enthusiast": return save.totalUpgradesPurchased;
+    case "upgrade_collector": return save.totalUpgradesPurchased;
+    case "score_seeker": return save.highScores.totalScore;
+    case "record_hunter": return save.highScores.totalRecordBreaks;
+    case "perfect_master": return save.highScores.totalPerfect;
+    case "wheel_legend": return save.highScores.totalLaunches;
+    case "point_millionaire": return save.highScores.totalScore;
     default: return 0;
   }
 }
@@ -445,8 +546,21 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "speed_demon", name: "SPEED DEMON", desc: "Reach 90 m/s fictional speed.", target: 90, rewardCoins: 400 },
   { id: "record_breaker", name: "RECORD BREAKER", desc: "Beat a personal record.", target: 1, rewardCoins: 500 },
   { id: "upgrader", name: "UPGRADER", desc: "Purchase 10 upgrades.", target: 10, rewardCoins: 800 },
-  { id: "explorer", name: "EXPLORER", desc: "Unlock all 5 locations.", target: 5, rewardCoins: 1000 },
+  { id: "explorer", name: "EXPLORER", desc: `Unlock all ${LOCATIONS.length} locations.`, target: LOCATIONS.length, rewardCoins: 1000 },
   { id: "master_engineer", name: "MASTER ENGINEER", desc: "Reach player level 15.", target: 15, rewardCoins: 1500 },
+  // --- v1.1 additions ---
+  { id: "launch_fanatic", name: "LAUNCH FANATIC", desc: "Complete 25 launches.", target: 25, rewardCoins: 600 },
+  { id: "launch_legend", name: "LAUNCH LEGEND", desc: "Complete 100 launches.", target: 100, rewardCoins: 1500 },
+  { id: "perfect_launcher", name: "PERFECT LAUNCHER", desc: "Perform 20 accurate (95%+) launches.", target: 20, rewardCoins: 900 },
+  { id: "sky_scraper", name: "SKY SCRAPER", desc: "Reach 350 m altitude.", target: 350, rewardCoins: 900 },
+  { id: "distance_legend", name: "DISTANCE LEGEND", desc: "Reach 2,000 m in a single launch.", target: 2000, rewardCoins: 1200 },
+  { id: "score_lord", name: "SCORE LORD", desc: "Reach 50,000 best score.", target: 50000, rewardCoins: 1200 },
+  { id: "point_collector", name: "POINT COLLECTOR", desc: "Reach 250,000 total points.", target: 250000, rewardCoins: 1500 },
+  { id: "shopaholic", name: "SHOPAHOLIC", desc: "Purchase 50 upgrades.", target: 50, rewardCoins: 1000 },
+  { id: "record_hunter", name: "RECORD HUNTER", desc: "Beat a personal record 25 times.", target: 25, rewardCoins: 1000 },
+  { id: "overdrive_gambler", name: "OVERDRIVE GAMBLER", desc: "Launch from the overdrive zone 20 times.", target: 20, rewardCoins: 800 },
+  { id: "air_time_ace", name: "AIR TIME ACE", desc: "Stay airborne for 8 s in one launch.", target: 8, rewardCoins: 800 },
+  { id: "mythic_driver", name: "MYTHIC DRIVER", desc: "Reach player level 40.", target: 40, rewardCoins: 2000 },
 ];
 
 export function achievementProgress(save: SaveData, id: string): number {
@@ -458,6 +572,18 @@ export function achievementProgress(save: SaveData, id: string): number {
     case "upgrader": return save.totalUpgradesPurchased;
     case "explorer": return save.locations.unlocked.length;
     case "master_engineer": return save.player.level;
+    case "launch_fanatic": return save.highScores.totalLaunches;
+    case "launch_legend": return save.highScores.totalLaunches;
+    case "perfect_launcher": return save.highScores.totalPerfect;
+    case "sky_scraper": return save.highScores.bestHeight;
+    case "distance_legend": return save.highScores.bestDistance;
+    case "score_lord": return save.highScores.bestScore;
+    case "point_collector": return save.highScores.totalScore;
+    case "shopaholic": return save.totalUpgradesPurchased;
+    case "record_hunter": return save.highScores.totalRecordBreaks;
+    case "overdrive_gambler": return save.highScores.totalOverdrive;
+    case "air_time_ace": return Math.round(save.highScores.bestAirTime);
+    case "mythic_driver": return save.player.level;
     default: return 0;
   }
 }
@@ -477,9 +603,9 @@ export function defaultSettings(): Settings {
 
 export function defaultUpgrades(): UpgradeLevels {
   return {
-    engine: { power: 1, rpmControl: 1, efficiency: 1, cooling: 1, launchBonus: 1 },
-    wheel: { stability: 1, control: 1, bounce: 1, airControl: 1, durability: 1 },
-    ramp: { launchBonus: 1, accuracy: 1, stability: 1, comboBonus: 1 },
+    engine: { power: 1, rpmControl: 1, efficiency: 1, cooling: 1, launchBonus: 1, turbo: 1, fuel: 1 },
+    wheel: { stability: 1, control: 1, bounce: 1, airControl: 1, durability: 1, grip: 1, gyro: 1 },
+    ramp: { launchBonus: 1, accuracy: 1, stability: 1, comboBonus: 1, kick: 1, rail: 1 },
   };
 }
 

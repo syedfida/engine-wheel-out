@@ -34,6 +34,7 @@ export function freshSave(): SaveData {
       totalDistance: 0,
       totalLaunches: 0,
       totalPerfect: 0,
+      totalOverdrive: 0,
       totalRecordBreaks: 0,
     },
     missions: emptyMissionStates(),
@@ -60,7 +61,7 @@ function mergeSave(base: SaveData, raw: unknown): SaveData {
   };
   if (isObject(raw.player)) {
     out.player = {
-      level: clampInt(raw.player.level, 1, 30, base.player.level),
+      level: clampInt(raw.player.level, 1, 50, base.player.level),
       xp: clampInt(raw.player.xp, 0, Number.MAX_SAFE_INTEGER, base.player.xp),
       coins: clampInt(raw.player.coins, 0, Number.MAX_SAFE_INTEGER, base.player.coins),
     };
@@ -113,6 +114,7 @@ function mergeSave(base: SaveData, raw: unknown): SaveData {
       totalDistance: num(h.totalDistance, base.highScores.totalDistance),
       totalLaunches: num(h.totalLaunches, base.highScores.totalLaunches),
       totalPerfect: num(h.totalPerfect, base.highScores.totalPerfect),
+      totalOverdrive: num(h.totalOverdrive, base.highScores.totalOverdrive),
       totalRecordBreaks: num(h.totalRecordBreaks, base.highScores.totalRecordBreaks),
     };
   }

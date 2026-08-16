@@ -84,7 +84,8 @@ export function SettingsScreen() {
           </GameButton>
 
           <p className="mt-1 text-center text-[10px] leading-relaxed text-white/40">
-            All progress is saved on this device. No account, no internet, no real-money anything.
+            All progress is saved on this device. No internet or real-money anything.
+            Joining the online leaderboard is optional and needs only a username — no email or phone.
           </p>
         </div>
       </div>
@@ -150,11 +151,11 @@ export function SettingsScreen() {
                 <>
                   <h3 className="text-center font-arcade text-lg text-emerald-300">PRIVACY</h3>
                   <div className="mt-4 space-y-2 text-xs leading-relaxed text-white/75">
-                    <p>• No account, no login, no online service required.</p>
-                    <p>• Everything runs offline on your device.</p>
+                    <p>• The full game runs offline on your device — no account required.</p>
+                    <p>• The online leaderboard is optional. It asks only for a username, password and display name — never email, phone number or other personal data.</p>
+                    <p>• Passwords are hashed on your device and never stored in plaintext.</p>
                     <p>• Save data stays in your browser's local storage.</p>
                     <p>• Coins are fictional in-game currency only. No payments, deposits or cash-out.</p>
-                    <p>• Nothing is uploaded or shared.</p>
                   </div>
                   <GameButton variant="gold" className="mt-6 w-full" onClick={() => setModal(null)}>
                     CLOSE

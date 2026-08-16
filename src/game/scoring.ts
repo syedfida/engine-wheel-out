@@ -59,6 +59,7 @@ export function computeLaunchQuality(rpm: number, upgrades: UpgradeLevels): Laun
   const variance = Math.max(0.04, 0.14 - s.rampStability * 0.12);
   let power = lo + (hi - lo) * (0.4 + 0.6 * Math.random()) + (Math.random() - 0.5) * variance;
   power *= 1 + s.power + s.launchBonus + s.rampLaunch;
+  if (zone.id === "overdrive") power *= 1 + s.turbo;
   power = clamp(power, 0.06, 1.35);
 
   // Accuracy — how close the launch was to the sweet spot
@@ -266,6 +267,7 @@ export function applyRunToSave(
   save.highScores.totalDistance += Math.round(stats.distance);
   save.highScores.totalLaunches += 1;
   if (quality.perfect) save.highScores.totalPerfect += 1;
+  if (quality.zone === "overdrive") save.highScores.totalOverdrive += 1;
   if (recordsBroken.length > 0) save.highScores.totalRecordBreaks += recordsBroken.length;
 
   // Player progression

@@ -25,7 +25,7 @@ export function LocationsScreen() {
         </div>
 
         <p className="mt-3 text-center text-[11px] text-white/55">
-          Five fictional environments. Progress unlocks new ones.
+          Fictional environments across Pakistan — progress unlocks new ones.
         </p>
 
         <div className="mt-4 flex flex-col gap-3.5">

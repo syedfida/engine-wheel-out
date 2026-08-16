@@ -19,6 +19,12 @@ export interface EffectiveStats {
   accuracy: number; // accuracy bonus
   rampStability: number; // launch variance reduction
   comboBonus: number; // combo score bonus
+  turbo: number; // overdrive launch power bonus
+  fuelRate: number; // faster RPM build
+  grip: number; // keeps roll speed on the ground
+  gyro: number; // stronger air boost
+  kick: number; // extra vertical lift at launch
+  rail: number; // extra launch distance
 }
 
 export function effectiveStats(u: UpgradeLevels): EffectiveStats {
@@ -37,6 +43,12 @@ export function effectiveStats(u: UpgradeLevels): EffectiveStats {
     accuracy: (u.ramp.accuracy - 1) * 0.025,
     rampStability: (u.ramp.stability - 1) * 0.07,
     comboBonus: (u.ramp.comboBonus - 1) * 15,
+    turbo: (u.engine.turbo - 1) * 0.05,
+    fuelRate: (u.engine.fuel - 1) * 0.05,
+    grip: (u.wheel.grip - 1) * 0.07,
+    gyro: (u.wheel.gyro - 1) * 0.06,
+    kick: (u.ramp.kick - 1) * 0.04,
+    rail: (u.ramp.rail - 1) * 0.03,
   };
 }
 

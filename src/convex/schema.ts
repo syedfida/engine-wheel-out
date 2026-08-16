@@ -32,12 +32,33 @@ const schema = defineSchema(
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // add other tables here
+    // Game leaderboard accounts. Username/password/name only — deliberately no
+    // email or phone. Passwords are PBKDF2-hashed on the client before storage.
+    leaderboardUsers: defineTable({
+      username: v.string(), // lowercase unique handle
+      name: v.string(), // public display name
+      passHash: v.string(), // PBKDF2-SHA256 hex, salted
+      salt: v.string(),
+      tokenHash: v.optional(v.string()), // sha256 of the session token
+      createdAt: v.number(),
+    })
+      .index("by_username", ["username"])
+      .index("by_tokenHash", ["tokenHash"]),
 
-    // tableName: defineTable({
-    //   ...
-    //   // table fields
-    // }).index("by_field", ["field"])
+    // One row per leaderboard user with their best submitted scores.
+    leaderboardScores: defineTable({
+      userId: v.id("leaderboardUsers"),
+      username: v.string(),
+      name: v.string(),
+      bestScore: v.number(),
+      bestDistance: v.number(),
+      bestHeight: v.number(),
+      bestAccuracy: v.number(),
+      launches: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_score", ["bestScore"])
+      .index("by_userId", ["userId"]),
   },
   {
     schemaValidation: false,

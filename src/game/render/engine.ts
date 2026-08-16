@@ -63,6 +63,10 @@ const WHEEL_STYLES: Record<string, WheelStyle> = {
   wheel_flame: { tire: "#3a1d18", rim: "#ff7a2a", hub: "#b34a1f", glow: "#ff5a1a" },
   wheel_neon: { tire: "#13141c", rim: "#35d6ff", hub: "#1f8fb0", glow: "#35d6ff" },
   wheel_gold: { tire: "#2e2810", rim: "#e9b83c", hub: "#a37f1e", glow: "#ffd54a" },
+  wheel_crimson: { tire: "#4a1212", rim: "#c91f1f", hub: "#7a1515", glow: "#ff3b3b" },
+  wheel_candy: { tire: "#3a1426", rim: "#ff7ac8", hub: "#35d6ff", glow: "#ff7ac8" },
+  wheel_obsidian: { tire: "#0c0d12", rim: "#d7dbe2", hub: "#2f3540", glow: "#b9c4d4" },
+  wheel_rainbow: { tire: "#14141c", rim: "#e879f9", hub: "#38bdf8", glow: "#38bdf8" },
 };
 
 const ENGINE_STYLES: Record<string, { body: string; head: string; accent: string; dark: string }> = {
@@ -70,6 +74,9 @@ const ENGINE_STYLES: Record<string, { body: string; head: string; accent: string
   engine_chrome: { body: "#c9d2da", head: "#aeb9c4", accent: "#e6edf4", dark: "#6f7a85" },
   engine_carbon: { body: "#2b2f35", head: "#1d2126", accent: "#3a4048", dark: "#101317" },
   engine_gold: { body: "#d9a92e", head: "#b8891f", accent: "#f2cc5a", dark: "#7a5c10" },
+  engine_blue: { body: "#2a5f8f", head: "#1e476b", accent: "#4a9de0", dark: "#12293d" },
+  engine_red: { body: "#b3362a", head: "#8a261d", accent: "#e05a4a", dark: "#52120c" },
+  engine_neon: { body: "#1c2430", head: "#10161f", accent: "#35d6ff", dark: "#07090d" },
 };
 
 const TRAIL_COLORS: Record<string, string | null> = {
@@ -77,13 +84,24 @@ const TRAIL_COLORS: Record<string, string | null> = {
   trail_spark: "#ffb347",
   trail_ember: "#ff5a2a",
   trail_gold: "#ffd54a",
+  trail_sky: "#7dd3fc",
+  trail_neon: "#e879f9",
+  trail_rainbow: "#fff", // special-cased: cycles hue at runtime
 };
 
 const DUST_COLORS: Record<string, string> = {
   dust_default: "",
   dust_sand: "#d9b46a",
   dust_ember: "#ff8a4a",
+  dust_neon: "#c084fc",
+  dust_snow: "#f2f6f9",
 };
+
+/** Hue for the PRISM TAIL trail, cycling through the spectrum. */
+function rainbowColor(t: number): string {
+  const hue = (t * 260) % 360;
+  return `hsl(${hue}, 95%, 62%)`;
+}
 
 export class GameRenderer {
   private canvas: HTMLCanvasElement;
@@ -123,6 +141,7 @@ export class GameRenderer {
   private camZoom = 1;
   private camZoomTarget = 1;
   private flyCamY = 0;
+  private shockT = -1; // launch shockwave ring timer
 
   private particles = new ParticleSystem(220);
   private hudSentPhase: GamePhase | null = null;
@@ -229,7 +248,8 @@ export class GameRenderer {
   airBoost(): void {
     if (this.mode !== "gameplay" || this.phase !== "flight" || !this.flight) return;
     if (this.flight.airFuel < 0.3) return;
-    this.flight.vy += 13;
+    const s = effectiveStats(this.cfg.upgrades);
+    this.flight.vy += 13 * (1 + s.gyro);
     this.flight.airFuel = Math.max(0, this.flight.airFuel - 0.4);
     this.particles.burst({
       x: this.wheelScreenX(this.flight.x),
@@ -256,6 +276,7 @@ export class GameRenderer {
     this.camZoom = 1;
     this.camZoomTarget = 1;
     this.flyCamY = 0;
+    this.shockT = -1;
     this.particles.clear();
     this.stopEngineSound();
   }
@@ -357,6 +378,10 @@ export class GameRenderer {
     const upgrades = this.cfg.upgrades;
     const s = effectiveStats(upgrades);
 
+    // launch shockwave ring timer
+    if (this.shockT >= 0) this.shockT += dt;
+    if (this.shockT > 0.7) this.shockT = -1;
+
     switch (this.phase) {
       case "idle": {
         this.rpm = Math.max(0, this.rpm - RPM_DECAY * dt);
@@ -366,7 +391,10 @@ export class GameRenderer {
         break;
       }
       case "building": {
-        const rate = this.engineRunning ? (this.holding ? RPM_AUTO_RISE + RPM_HOLD_BONUS : RPM_SLOW_RISE) : -RPM_DECAY;
+        const revMult = 1 + s.fuelRate;
+        const rate = this.engineRunning
+          ? (this.holding ? (RPM_AUTO_RISE + RPM_HOLD_BONUS) * revMult : RPM_SLOW_RISE * revMult)
+          : -RPM_DECAY;
         if (!this.engineRunning && this.rpm <= 0) {
           this.phase = "idle";
           this.camZoomTarget = 1;
@@ -393,8 +421,9 @@ export class GameRenderer {
             drag: 1.4,
           });
         }
-        // exhaust puffs
+        // exhaust puffs (flame-colored when hot)
         if (Math.random() < this.rpm / 60) {
+          const hot = this.rpm > 55;
           this.particles.spawn({
             x: this.launchX() + this.wheelRadius() * 2.1,
             y: this.groundY() - this.wheelRadius() * 0.55,
@@ -402,8 +431,21 @@ export class GameRenderer {
             vy: -20 - this.rpm * 0.3,
             life: 0.35 + Math.random() * 0.3,
             size: 3 + this.rpm * 0.05,
-            color: "rgba(160,160,170,0.85)",
+            color: hot ? (Math.random() < 0.5 ? "#ff9a3c" : "#ff5a2a") : "rgba(160,160,170,0.85)",
             drag: 2,
+          });
+        }
+        // heat sparks from the wheel-to-ramp contact
+        if (this.rpm > 60 && Math.random() < this.rpm / 55) {
+          this.particles.spawn({
+            x: wx + this.wheelRadius() * 0.15,
+            y: wy + this.wheelRadius() * 0.85,
+            vx: -40 - Math.random() * 60,
+            vy: -60 - Math.random() * 80,
+            life: 0.22 + Math.random() * 0.25,
+            size: 1.4 + Math.random() * 1.4,
+            color: Math.random() < 0.5 ? "#ffe45a" : "#ff8a3c",
+            gravity: 420,
           });
         }
         audio.updateEngine(this.rpm, true);
@@ -431,6 +473,7 @@ export class GameRenderer {
           const rampTopMeters = (this.wheelRadius() * 1.18) / HEIGHT_PX_PER_M;
           this.flight = startFlight(this.quality?.power ?? 0.3, upgrades, rampTopMeters);
           this.phase = "flight";
+          this.shockT = 0;
           audio.sfx(this.quality?.backfire ? "backfire" : "launch");
           audio.updateEngine(0, false);
           if (this.quality?.backfire) {
@@ -451,8 +494,9 @@ export class GameRenderer {
         const res = stepFlight(this.flight, dt, this.airHolding, upgrades);
         const fx = this.flight;
 
-        // trail
-        const trail = TRAIL_COLORS[this.cfg.equipped.trail];
+        // trail (PRISM TAIL cycles hues)
+        let trail = TRAIL_COLORS[this.cfg.equipped.trail];
+        if (trail === "#fff" && this.cfg.equipped.trail === "trail_rainbow") trail = rainbowColor(this.time);
         if (trail && Math.random() < 0.75) {
           this.particles.spawn({
             x: this.wheelScreenX(fx.x),
@@ -673,10 +717,11 @@ export class GameRenderer {
     const menuRpm = 14 + 7 * Math.sin(this.time * 0.9);
     this.drawEngine(ctx, ex, ey, r * 0.95, menuRpm, 0.25);
 
-    // wheel on ramp, right of center
-    const wx = w * 0.56;
-    const wy = groundY - r * 1.05;
+    // wheel on ramp, right of center — the pusher stick nudges it up the ramp
+    const wx = w * 0.56 + Math.sin(this.time * 0.9) * r * 0.06;
+    const wy = groundY - r * 1.05 - Math.max(0, Math.sin(this.time * 0.9)) * r * 0.05;
     this.drawRamp(ctx, wx, groundY, r);
+    this.drawPusher(ctx, ex + r * 0.7, groundY, wx, wy, r, 0.45 + Math.sin(this.time * 0.9) * 0.25, menuRpm);
     this.drawWheel(ctx, wx, wy, r, this.menuSpin, 0.3);
 
     // dust kicked under wheel
@@ -712,11 +757,34 @@ export class GameRenderer {
     // Ramp + wheel during build/launch
     if (this.phase === "idle" || this.phase === "building" || this.phase === "launching") {
       this.drawRamp(ctx, lx, groundY, r);
-      const wx = lx + r * 0.55;
-      const wy = groundY - r * 1.18;
+      // the pusher stick shoves the wheel up the ramp as RPM builds
+      const climb = this.phase === "launching" ? 1 : Math.min(1, this.rpm / 100);
+      const wx = lx + r * 0.55 + climb * r * 0.5;
+      const wy = groundY - r * 1.18 - climb * r * 0.3;
       const spin = this.rpm / 100 * 9 + this.time * 0.2;
+      const engineX = w * 0.36;
+      this.drawPusher(ctx, engineX, groundY, wx, wy, r, climb, this.phase === "launching" ? 100 : this.rpm);
       this.drawWheel(ctx, wx, wy, r, spin, this.heat());
-      this.drawEngine(ctx, w * 0.36, groundY - r * 0.32, r * 0.85, this.phase === "launching" ? 100 : this.rpm, this.heat());
+      this.drawEngine(ctx, engineX, groundY - r * 0.32, r * 0.85, this.phase === "launching" ? 100 : this.rpm, this.heat());
+    }
+
+    // launch shockwave ring
+    if (this.shockT >= 0 && this.shockT <= 0.7) {
+      const p = this.shockT / 0.7;
+      const rx = lx + r * 1.1;
+      const ry = groundY - r * 1.1;
+      ctx.globalAlpha = (1 - p) * 0.8;
+      ctx.strokeStyle = "#ffd54a";
+      ctx.lineWidth = 3 + (1 - p) * 5;
+      ctx.beginPath();
+      ctx.arc(rx, ry, r * (0.6 + p * 3.2), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = (1 - p) * 0.35;
+      ctx.fillStyle = "#ffb347";
+      ctx.beginPath();
+      ctx.arc(rx, ry, r * (0.6 + p * 3.2), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
 
     // Flying wheel
@@ -769,6 +837,108 @@ export class GameRenderer {
       ctx.lineTo(x + rampLen * (0.2 + t * 0.8), groundY - rampTop * (0.25 + t * 0.75));
       ctx.stroke();
     }
+    ctx.restore();
+  }
+
+  /** The pusher stick: a hydraulic arm that shoves the wheel up the ramp. */
+  private drawPusher(
+    ctx: CanvasRenderingContext2D,
+    mountX: number,
+    groundY: number,
+    wx: number,
+    wy: number,
+    r: number,
+    extend: number,
+    rpm: number,
+  ): void {
+    const pivotX = mountX - r * 0.28;
+    const pivotY = groundY - r * 0.32;
+    const dx = wx - pivotX;
+    const dy = wy - pivotY;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) return;
+    const ang = Math.atan2(dy, dx);
+    const cos = Math.cos(ang);
+    const sin = Math.sin(ang);
+
+    ctx.save();
+
+    // base plate on the ground
+    ctx.fillStyle = "#3f3222";
+    rr(ctx, pivotX - r * 0.34, groundY - r * 0.06, r * 0.68, r * 0.12, 3);
+    ctx.fill();
+    // stand
+    ctx.fillStyle = "#5a4630";
+    ctx.beginPath();
+    ctx.moveTo(pivotX - r * 0.16, groundY - r * 0.02);
+    ctx.lineTo(pivotX + r * 0.16, groundY - r * 0.02);
+    ctx.lineTo(pivotX + r * 0.1, pivotY + r * 0.1);
+    ctx.lineTo(pivotX - r * 0.1, pivotY + r * 0.1);
+    ctx.closePath();
+    ctx.fill();
+
+    // hydraulic cylinder
+    const cylLen = Math.max(r * 0.3, dist * 0.42);
+    ctx.save();
+    ctx.translate(pivotX, pivotY);
+    ctx.rotate(ang);
+    rr(ctx, -r * 0.07, -r * 0.14, cylLen, r * 0.28, r * 0.12);
+    ctx.fillStyle = "#8f929b";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = "#c3cbd4";
+    ctx.fillRect(cylLen * 0.35, -r * 0.1, cylLen * 0.18, r * 0.2);
+    ctx.restore();
+
+    // piston rod
+    const rodFrom = cylLen;
+    const rodTo = Math.max(rodFrom + r * 0.2, dist - r * 0.26);
+    ctx.strokeStyle = "#d7dbe2";
+    ctx.lineWidth = Math.max(3, r * 0.1);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(pivotX + cos * rodFrom, pivotY + sin * rodFrom);
+    ctx.lineTo(pivotX + cos * rodTo, pivotY + sin * rodTo);
+    ctx.stroke();
+
+    // pusher head — a rubber pad pressed against the wheel's back
+    const headX = pivotX + cos * rodTo;
+    const headY = pivotY + sin * rodTo;
+    const vib = rpm > 0 ? Math.sin(this.time * 40) * Math.min(3, rpm * 0.03) : 0;
+    ctx.save();
+    ctx.translate(headX - sin * vib, headY + cos * vib);
+    ctx.rotate(ang);
+    rr(ctx, -r * 0.15, -r * 0.3, r * 0.3, r * 0.6, r * 0.12);
+    ctx.fillStyle = "#2b2b2e";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // head glow when the pusher is slammed forward (launch)
+    if (extend > 0.8) {
+      const glowA = Math.min(0.55, (extend - 0.8) * 2.75);
+      const g = ctx.createRadialGradient(headX, headY, 2, headX, headY, r * 0.45);
+      g.addColorStop(0, `rgba(255,170,60,${glowA})`);
+      g.addColorStop(1, "rgba(255,170,60,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(headX - r * 0.45, headY - r * 0.45, r * 0.9, r * 0.9);
+    }
+
+    // zone indicator light on the stand
+    const lightCol = rpm >= 85 ? "#f59e0b" : rpm >= 60 ? "#22c55e" : rpm >= 30 ? "#38bdf8" : "#64748b";
+    ctx.fillStyle = lightCol + "55";
+    ctx.beginPath();
+    ctx.arc(pivotX - r * 0.2, groundY - r * 0.12, r * 0.11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = lightCol;
+    ctx.beginPath();
+    ctx.arc(pivotX - r * 0.2, groundY - r * 0.12, r * 0.055, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   }
 
@@ -839,6 +1009,25 @@ export class GameRenderer {
     ctx.beginPath();
     ctx.arc(x + s * 1.15, y - s * 0.32, s * 0.07, 0, Math.PI * 2);
     ctx.fill();
+
+    // exhaust flame (flickers when hot)
+    if (heat > 0.35) {
+      const fx = x + s * 1.2;
+      const fy = y - s * 0.32;
+      const fl = s * (0.35 + heat * 1.05) * (0.8 + 0.4 * Math.sin(this.time * 42));
+      const flick = 0.85 + 0.3 * Math.sin(this.time * 57 + 1.7);
+      const fg = ctx.createLinearGradient(fx, fy, fx + fl, fy);
+      fg.addColorStop(0, `rgba(255,240,180,${0.95 * flick})`);
+      fg.addColorStop(0.35, "rgba(255,150,50,0.75)");
+      fg.addColorStop(1, "rgba(255,60,20,0)");
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.moveTo(fx, fy - s * 0.055);
+      ctx.quadraticCurveTo(fx + fl * 0.55, fy - s * 0.1, fx + fl, fy);
+      ctx.quadraticCurveTo(fx + fl * 0.55, fy + s * 0.1, fx, fy + s * 0.055);
+      ctx.closePath();
+      ctx.fill();
+    }
 
     // fan
     const fanX = x - s * 0.72;
@@ -935,6 +1124,46 @@ export class GameRenderer {
         );
         ctx.stroke();
       }
+    } else if (rim === "rim_cross") {
+      ctx.lineWidth = r * 0.1;
+      for (let i = 0; i < 4; i++) {
+        const a = spin + (i * Math.PI) / 4 + Math.PI / 4;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * r * 0.14, Math.sin(a) * r * 0.14);
+        ctx.lineTo(Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6);
+        ctx.stroke();
+      }
+    } else if (rim === "rim_disc") {
+      // solid disc with cooling vents
+      ctx.fillStyle = style.hub;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      for (let i = 0; i < 6; i++) {
+        const a = spin + (i * Math.PI * 2) / 6;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * r * 0.34, Math.sin(a) * r * 0.34, r * 0.09, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.lineWidth = r * 0.03;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (rim === "rim_ring") {
+      ctx.strokeStyle = style.hub;
+      ctx.lineWidth = r * 0.06;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, r * (0.28 + i * 0.16), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = style.rim;
+      ctx.lineWidth = r * 0.025;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.44, spin, spin + Math.PI * 1.4);
+      ctx.stroke();
     } else if (rim === "rim_hex") {
       ctx.lineWidth = r * 0.06;
       for (let i = 0; i < 3; i++) {
@@ -1000,6 +1229,56 @@ export class GameRenderer {
       ctx.beginPath();
       ctx.arc(r * 0.05, 0, r * 0.12, 0, Math.PI * 2);
       ctx.fill();
+    } else if (decal === "decal_flag") {
+      // green field with white crescent and star
+      ctx.fillStyle = "#046a38";
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.19, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(-r * 0.02, 0, r * 0.11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#046a38";
+      ctx.beginPath();
+      ctx.arc(r * 0.035, 0, r * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+      this.drawStar(ctx, r * 0.1, -r * 0.06, r * 0.055, r * 0.024, 5);
+    } else if (decal === "decal_wing") {
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.16, -r * 0.06);
+      ctx.quadraticCurveTo(-r * 0.05, -r * 0.2, r * 0.12, -r * 0.16);
+      ctx.quadraticCurveTo(r * 0.02, -r * 0.1, r * 0.06, -r * 0.03);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.16, r * 0.06);
+      ctx.quadraticCurveTo(-r * 0.05, r * 0.2, r * 0.12, r * 0.16);
+      ctx.quadraticCurveTo(r * 0.02, r * 0.1, r * 0.06, r * 0.03);
+      ctx.closePath();
+      ctx.fill();
+    } else if (decal === "decal_skull") {
+      ctx.fillStyle = "#f2f4f7";
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#1a1a1e";
+      ctx.beginPath();
+      ctx.arc(-r * 0.05, -r * 0.03, r * 0.028, 0, Math.PI * 2);
+      ctx.arc(r * 0.05, -r * 0.03, r * 0.028, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#1a1a1e";
+      ctx.lineWidth = r * 0.02;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.02, r * 0.06);
+      ctx.lineTo(r * 0.02, r * 0.06);
+      ctx.stroke();
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(-r * 0.05 + i * r * 0.05, r * 0.1, r * 0.014, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     ctx.restore();
