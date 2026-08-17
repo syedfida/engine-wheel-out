@@ -289,6 +289,17 @@ export const COSMETICS: CosmeticDef[] = [
   { id: "engine_blue", category: "engine", name: "BLUE FLAME", price: 1400, desc: "Cool blue block with a hot heart." },
   { id: "engine_red", category: "engine", name: "RACER RED", price: 1100, desc: "Classic racing red livery." },
   { id: "engine_neon", category: "engine", name: "NEON CORE", price: 2200, desc: "Glowing cyan internals, dark shell." },
+  // --- v1.2 additions ---
+  { id: "wheel_sand", category: "wheel", name: "SAND RIDER", price: 1500, desc: "Desert tan rubber with ember rims." },
+  { id: "wheel_truckart", category: "wheel", name: "TRUCK ART", price: 2600, desc: "A riot of color — straight off a decorated lorry." },
+  { id: "rim_sunburst", category: "rim", name: "SUNBURST", price: 1300, desc: "Twelve golden rays spinning at speed." },
+  { id: "rim_geometric", category: "rim", name: "CHAAL GRID", price: 1800, desc: "Tiled diamond lattice in deep green and gold." },
+  { id: "trail_crimson", category: "trail", name: "CRIMSON COMET", price: 1700, desc: "A red-hot streak that burns across the sky." },
+  { id: "dust_salt", category: "dust", name: "SALT SPARKLE", price: 1100, desc: "Bright white powder that catches the light." },
+  { id: "dust_storm", category: "dust", name: "DESERT STORM", price: 900, desc: "A rolling cloud of golden grit." },
+  { id: "decal_truckstar", category: "decal", name: "TRUCK STAR", price: 1400, desc: "A bold star painted in truck-art colors." },
+  { id: "engine_desert", category: "engine", name: "DESERT STORM", price: 1900, desc: "Sand-and-olive block with a copper heart." },
+  { id: "engine_nightops", category: "engine", name: "NIGHT OPS", price: 2600, desc: "Matte black with cold blue internals." },
 ];
 
 export function cosmeticsByCategory(category: CosmeticCategory): CosmeticDef[] {
@@ -465,6 +476,57 @@ export const LOCATIONS: LocationDef[] = [
       musicRoot: 261.63, musicScale: [0, 2, 3, 7, 8, 10, 12],
     },
   },
+  {
+    id: "desert",
+    name: "THAL DESERT",
+    tagline: "Endless golden dunes and heat haze.",
+    unlockText: "Reach 900 m best distance",
+    unlocked: (s) => s.highScores.bestDistance >= 900,
+    visual: {
+      id: "desert",
+      skyTop: "#f2a65a", skyBottom: "#ffe8c2", horizon: "#eec58e",
+      sun: "#fff3c4", sunGlow: "rgba(255, 220, 140, 0.6)", stars: false, moon: false, fog: 0.08,
+      mountainFar: ["#d9a05f", "#c98e4e"], mountainNear: ["#b57e3f", "#a36f35"],
+      field: "#d9a860", fieldDark: "#c08a42", road: "#c9a06a",
+      tree: "#8a6a3a", building: "#e0b070", buildingRoof: "#9a6a3a",
+      dust: "rgba(235, 190, 120, 0.85)", glow: "rgba(255, 210, 130, 0.14)",
+      musicRoot: 155.56, musicScale: [0, 2, 4, 7, 9, 12, 14],
+    },
+  },
+  {
+    id: "salt",
+    name: "SALT RANGE",
+    tagline: "Pale flats that shimmer like snow.",
+    unlockText: "Reach player level 18",
+    unlocked: (s) => s.player.level >= 18,
+    visual: {
+      id: "salt",
+      skyTop: "#8fb8d9", skyBottom: "#eef3f8", horizon: "#efecef",
+      sun: "#ffffff", sunGlow: "rgba(255, 255, 255, 0.5)", stars: false, moon: false, fog: 0.18,
+      mountainFar: ["#d8c9d4", "#c9b7c5"], mountainNear: ["#b8a4b4", "#a592a4"],
+      field: "#e8e2dc", fieldDark: "#d2ccc5", road: "#b8b2ac",
+      tree: "#7d8a6a", building: "#f2ece4", buildingRoof: "#b08a6a",
+      dust: "rgba(240, 240, 235, 0.85)", glow: "rgba(240, 245, 255, 0.12)",
+      musicRoot: 164.81, musicScale: [0, 2, 3, 7, 8, 12, 14],
+    },
+  },
+  {
+    id: "river",
+    name: "RIVER PLAINS",
+    tagline: "Green fields along the great river.",
+    unlockText: "Complete 40 launches",
+    unlocked: (s) => s.highScores.totalLaunches >= 40,
+    visual: {
+      id: "river",
+      skyTop: "#4a90b8", skyBottom: "#cfe8e8", horizon: "#e0d8a8",
+      sun: "#ffdf7a", sunGlow: "rgba(255, 225, 150, 0.5)", stars: false, moon: false, fog: 0.1,
+      mountainFar: ["#5f9a8f", "#4f8a80"], mountainNear: ["#3f7a5f", "#356b52"],
+      field: "#6fae4f", fieldDark: "#5a9340", road: "#a08a5f",
+      tree: "#2f6b3a", building: "#e8d0a0", buildingRoof: "#a0502f",
+      dust: "rgba(200, 190, 150, 0.8)", glow: "rgba(200, 240, 220, 0.1)",
+      musicRoot: 220.0, musicScale: [0, 3, 5, 7, 10, 12, 15],
+    },
+  },
 ];
 
 export function locationById(id: string): LocationDef {
@@ -503,6 +565,17 @@ export const MISSIONS: MissionDef[] = [
   { id: "perfect_master", name: "PERFECT MASTER", desc: "Perform 20 accurate (95%+) launches.", target: 20, rewardCoins: 2500 },
   { id: "wheel_legend", name: "WHEEL LEGEND", desc: "Complete 25 launches.", target: 25, rewardCoins: 2500 },
   { id: "point_millionaire", name: "POINT MILLIONAIRE", desc: "Reach 100,000 total points.", target: 100000, rewardCoins: 5000, rewardCosmetic: "trail_rainbow" },
+  // --- v1.2 additions ---
+  { id: "century_club", name: "CENTURY CLUB", desc: "Complete 100 launches.", target: 100, rewardCoins: 3000 },
+  { id: "coin_hoarder", name: "COIN HOARDER", desc: "Hold 10,000 coins at once.", target: 10000, rewardCoins: 2500 },
+  { id: "height_champion", name: "HEIGHT CHAMPION", desc: "Reach 400 m in a single launch.", target: 400, rewardCoins: 2000 },
+  { id: "marathon_wheel", name: "MARATHON WHEEL", desc: "Cover 50,000 m of total distance.", target: 50000, rewardCoins: 3000 },
+  { id: "point_titan", name: "POINT TITAN", desc: "Reach 500,000 total points.", target: 500000, rewardCoins: 5000 },
+  { id: "perfect_elite", name: "PERFECT ELITE", desc: "Perform 50 accurate (95%+) launches.", target: 50, rewardCoins: 3000 },
+  { id: "overdrive_addict", name: "OVERDRIVE ADDICT", desc: "Launch from the overdrive zone 30 times.", target: 30, rewardCoins: 2000 },
+  { id: "garage_guru", name: "GARAGE GURU", desc: "Purchase 30 upgrades.", target: 30, rewardCoins: 2500 },
+  { id: "trophy_hunter", name: "TROPHY HUNTER", desc: "Unlock 15 achievements.", target: 15, rewardCoins: 3000 },
+  { id: "world_traveller", name: "WORLD TRAVELLER", desc: "Unlock 5 locations.", target: 5, rewardCoins: 2500 },
 ];
 
 export function missionProgress(save: SaveData, id: string): number {
@@ -526,6 +599,16 @@ export function missionProgress(save: SaveData, id: string): number {
     case "perfect_master": return save.highScores.totalPerfect;
     case "wheel_legend": return save.highScores.totalLaunches;
     case "point_millionaire": return save.highScores.totalScore;
+    case "century_club": return save.highScores.totalLaunches;
+    case "coin_hoarder": return save.player.coins;
+    case "height_champion": return save.highScores.bestHeight;
+    case "marathon_wheel": return save.highScores.totalDistance;
+    case "point_titan": return save.highScores.totalScore;
+    case "perfect_elite": return save.highScores.totalPerfect;
+    case "overdrive_addict": return save.highScores.totalOverdrive;
+    case "garage_guru": return save.totalUpgradesPurchased;
+    case "trophy_hunter": return Object.values(save.achievements).filter((a) => a.unlockedAt !== null).length;
+    case "world_traveller": return save.locations.unlocked.length;
     default: return 0;
   }
 }
@@ -561,6 +644,17 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "overdrive_gambler", name: "OVERDRIVE GAMBLER", desc: "Launch from the overdrive zone 20 times.", target: 20, rewardCoins: 800 },
   { id: "air_time_ace", name: "AIR TIME ACE", desc: "Stay airborne for 8 s in one launch.", target: 8, rewardCoins: 800 },
   { id: "mythic_driver", name: "MYTHIC DRIVER", desc: "Reach player level 40.", target: 40, rewardCoins: 2000 },
+  // --- v1.2 additions ---
+  { id: "rookie_rider", name: "ROOKIE RIDER", desc: "Reach player level 5.", target: 5, rewardCoins: 300 },
+  { id: "seasoned_mechanic", name: "SEASONED MECHANIC", desc: "Reach player level 25.", target: 25, rewardCoins: 1500 },
+  { id: "turbo_legend", name: "TURBO LEGEND", desc: "Reach player level 50.", target: 50, rewardCoins: 3000 },
+  { id: "long_distance", name: "LONG DISTANCE", desc: "Reach 1,000 m in a single launch.", target: 1000, rewardCoins: 800 },
+  { id: "giant_leap", name: "GIANT LEAP", desc: "Reach 2,500 m in a single launch.", target: 2500, rewardCoins: 2000 },
+  { id: "coin_king", name: "COIN KING", desc: "Hold 20,000 coins at once.", target: 20000, rewardCoins: 1500 },
+  { id: "overdrive_ace", name: "OVERDRIVE ACE", desc: "Launch from the overdrive zone 50 times.", target: 50, rewardCoins: 1200 },
+  { id: "perfectionist", name: "PERFECTIONIST", desc: "Perform 50 accurate (95%+) launches.", target: 50, rewardCoins: 1500 },
+  { id: "sightseer", name: "SIGHTSEER", desc: "Unlock 3 locations.", target: 3, rewardCoins: 600 },
+  { id: "point_millionaire", name: "POINT MILLIONAIRE", desc: "Reach 1,000,000 total points.", target: 1000000, rewardCoins: 4000 },
 ];
 
 export function achievementProgress(save: SaveData, id: string): number {
@@ -584,6 +678,16 @@ export function achievementProgress(save: SaveData, id: string): number {
     case "overdrive_gambler": return save.highScores.totalOverdrive;
     case "air_time_ace": return Math.round(save.highScores.bestAirTime);
     case "mythic_driver": return save.player.level;
+    case "rookie_rider": return save.player.level;
+    case "seasoned_mechanic": return save.player.level;
+    case "turbo_legend": return save.player.level;
+    case "long_distance": return save.highScores.bestDistance;
+    case "giant_leap": return save.highScores.bestDistance;
+    case "coin_king": return save.player.coins;
+    case "overdrive_ace": return save.highScores.totalOverdrive;
+    case "perfectionist": return save.highScores.totalPerfect;
+    case "sightseer": return save.locations.unlocked.length;
+    case "point_millionaire": return save.highScores.totalScore;
     default: return 0;
   }
 }

@@ -67,6 +67,8 @@ const WHEEL_STYLES: Record<string, WheelStyle> = {
   wheel_candy: { tire: "#3a1426", rim: "#ff7ac8", hub: "#35d6ff", glow: "#ff7ac8" },
   wheel_obsidian: { tire: "#0c0d12", rim: "#d7dbe2", hub: "#2f3540", glow: "#b9c4d4" },
   wheel_rainbow: { tire: "#14141c", rim: "#e879f9", hub: "#38bdf8", glow: "#38bdf8" },
+  wheel_sand: { tire: "#c8a05a", rim: "#ff9a3c", hub: "#a36f2a", glow: "#ffb347" },
+  wheel_truckart: { tire: "#26262c", rim: "#ffd54a", hub: "#e05a4a", glow: "#ffd54a" },
 };
 
 const ENGINE_STYLES: Record<string, { body: string; head: string; accent: string; dark: string }> = {
@@ -77,6 +79,8 @@ const ENGINE_STYLES: Record<string, { body: string; head: string; accent: string
   engine_blue: { body: "#2a5f8f", head: "#1e476b", accent: "#4a9de0", dark: "#12293d" },
   engine_red: { body: "#b3362a", head: "#8a261d", accent: "#e05a4a", dark: "#52120c" },
   engine_neon: { body: "#1c2430", head: "#10161f", accent: "#35d6ff", dark: "#07090d" },
+  engine_desert: { body: "#8a7a4a", head: "#6b5c36", accent: "#e0a95a", dark: "#3f351c" },
+  engine_nightops: { body: "#22262e", head: "#14171d", accent: "#5ad2ff", dark: "#0a0c10" },
 };
 
 const TRAIL_COLORS: Record<string, string | null> = {
@@ -87,6 +91,7 @@ const TRAIL_COLORS: Record<string, string | null> = {
   trail_sky: "#7dd3fc",
   trail_neon: "#e879f9",
   trail_rainbow: "#fff", // special-cased: cycles hue at runtime
+  trail_crimson: "#ff3b3b",
 };
 
 const DUST_COLORS: Record<string, string> = {
@@ -95,6 +100,8 @@ const DUST_COLORS: Record<string, string> = {
   dust_ember: "#ff8a4a",
   dust_neon: "#c084fc",
   dust_snow: "#f2f6f9",
+  dust_salt: "#eef4ff",
+  dust_storm: "#c98a4a",
 };
 
 /** Hue for the PRISM TAIL trail, cycling through the spectrum. */
@@ -1193,6 +1200,20 @@ export class GameRenderer {
     ctx.arc(0, 0, r * 0.62, 0, Math.PI * 2);
     ctx.fill();
 
+    // TRUCK STAR decal — a big golden star painted across the rim, spinning
+    // slowly behind the spokes, with a red halo around the hub.
+    if (this.cfg.equipped.decal === "decal_truckstar") {
+      ctx.save();
+      ctx.rotate(spin * 0.35);
+      ctx.fillStyle = "#ffd54a";
+      this.drawStar(ctx, 0, 0, r * 0.58, r * 0.3, 5);
+      ctx.restore();
+      ctx.fillStyle = "#e05a4a";
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.32, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // spokes
     ctx.strokeStyle = style.hub;
     ctx.lineCap = "round";
@@ -1259,6 +1280,37 @@ export class GameRenderer {
       ctx.lineWidth = r * 0.025;
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.44, spin, spin + Math.PI * 1.4);
+      ctx.stroke();
+    } else if (rim === "rim_sunburst") {
+      // twelve golden rays radiating from the hub
+      ctx.lineWidth = r * 0.05;
+      for (let i = 0; i < 12; i++) {
+        const a = spin + (i * Math.PI * 2) / 12;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * r * 0.14, Math.sin(a) * r * 0.14);
+        ctx.lineTo(Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58);
+        ctx.stroke();
+      }
+    } else if (rim === "rim_geometric") {
+      // diamond lattice in deep green with gold accents
+      ctx.strokeStyle = "#1f8a4a";
+      ctx.lineWidth = r * 0.05;
+      for (let ring = 0; ring < 2; ring++) {
+        for (let i = 0; i < 8; i++) {
+          const a = spin + (i * Math.PI * 2) / 8 + ring * 0.3;
+          const r0 = r * (0.18 + ring * 0.16);
+          const r1 = r * (0.36 + ring * 0.16);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+          ctx.lineTo(Math.cos(a + 0.4) * r1, Math.sin(a + 0.4) * r1);
+          ctx.lineTo(Math.cos(a + 0.8) * r0, Math.sin(a + 0.8) * r0);
+          ctx.stroke();
+        }
+      }
+      ctx.strokeStyle = "#ffd54a";
+      ctx.lineWidth = r * 0.03;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.6, 0, Math.PI * 2);
       ctx.stroke();
     } else if (rim === "rim_hex") {
       ctx.lineWidth = r * 0.06;
