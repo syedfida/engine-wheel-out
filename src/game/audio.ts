@@ -15,7 +15,8 @@ type SfxName =
   | "newRecord"
   | "levelUp"
   | "backfire"
-  | "tick";
+  | "tick"
+  | "slam";
 
 class AudioManager {
   private ctx: AudioContext | null = null;
@@ -292,6 +293,11 @@ class AudioManager {
         this.noiseBurst(0.5, 0.3, 400, "lowpass");
         break;
       case "tick": this.tone(1200, 0.05, "sine", 0.08); break;
+      case "slam":
+        // sharp mechanical thunk — the pusher stick slamming the tyre
+        this.noiseBurst(0.16, 0.4, 280, "lowpass");
+        this.tone(165, 0.15, "square", 0.2, 50);
+        break;
     }
   }
 

@@ -306,7 +306,13 @@ export class GameRenderer {
   }
 
   private launchX(): number {
-    return this.w * 0.2;
+    // ramp base — pushed toward centre so the engine + pusher stick are clearly visible
+    return this.w * 0.42 - this.wheelRadius() * 1.05;
+  }
+
+  /** Engine centre (left of the ramp) — it drives the pusher stick that throws the tyre. */
+  private engineX(): number {
+    return this.w * 0.1 + this.wheelRadius() * 0.35;
   }
 
   private wheelRadius(): number {
@@ -421,12 +427,12 @@ export class GameRenderer {
             drag: 1.4,
           });
         }
-        // exhaust puffs (flame-colored when hot)
+        // exhaust puffs from the engine (flame-colored when hot)
         if (Math.random() < this.rpm / 60) {
           const hot = this.rpm > 55;
           this.particles.spawn({
-            x: this.launchX() + this.wheelRadius() * 2.1,
-            y: this.groundY() - this.wheelRadius() * 0.55,
+            x: this.engineX() + this.wheelRadius() * 1.05,
+            y: this.groundY() - this.wheelRadius() * 0.6,
             vx: 60 + this.rpm * 1.2,
             vy: -20 - this.rpm * 0.3,
             life: 0.35 + Math.random() * 0.3,
@@ -453,6 +459,12 @@ export class GameRenderer {
       }
       case "launching": {
         this.launchT += dt * 0.42; // slow-motion anticipation
+        // the pusher stick winds up — the tyre creeps, then SLAMS toward the lip
+        const slam = Math.min(1, this.launchT * 1.15);
+        if (slam < 1) {
+          this.shakeX = slam * 2.5;
+          this.shakeY = slam * 1.4;
+        }
         this.camZoom += (1.28 - this.camZoom) * 0.12;
         // speed lines build
         if (Math.random() < 0.5 && !this.cfg.reducedEffects) {
@@ -467,15 +479,57 @@ export class GameRenderer {
             kind: "streak",
           });
         }
+        // strain sparks at the pusher head as the stick loads up
+        if (slam > 0.45 && Math.random() < slam * 0.4) {
+          this.particles.spawn({
+            x: this.engineX() + this.wheelRadius() * 0.6,
+            y: this.groundY() - this.wheelRadius() * 0.4,
+            vx: (Math.random() - 0.5) * 120,
+            vy: -20 - Math.random() * 80,
+            life: 0.2 + Math.random() * 0.2,
+            size: 1.6,
+            color: "#ffe45a",
+            gravity: 300,
+          });
+        }
         audio.updateEngine(this.rpm, true);
         if (this.launchT >= 1) {
-          // LAUNCH! (start at the top of the ramp so the visuals stay continuous)
+          // THROW! The engine fires and the stick slams the tyre off the ramp.
           const rampTopMeters = (this.wheelRadius() * 1.18) / HEIGHT_PX_PER_M;
           this.flight = startFlight(this.quality?.power ?? 0.3, upgrades, rampTopMeters);
           this.phase = "flight";
           this.shockT = 0;
+          this.shakeX = 15;
+          this.shakeY = 9;
+          audio.sfx("slam");
           audio.sfx(this.quality?.backfire ? "backfire" : "launch");
           audio.updateEngine(0, false);
+          // engine exhaust blast — the engine throws
+          this.particles.burst({
+            x: this.engineX() + this.wheelRadius() * 1.05,
+            y: this.groundY() - this.wheelRadius() * 0.6,
+            count: this.particleCount(22),
+            speed: 260,
+            life: 0.55,
+            size: 5,
+            color: "#ffb347",
+            gravity: 120,
+            angle: 0,
+            spread: Math.PI * 0.55,
+          });
+          // tyre kicked off the lip — dust burst behind it
+          this.particles.burst({
+            x: this.launchX() + this.wheelRadius() * 1.4,
+            y: this.groundY() - this.wheelRadius() * 1.1,
+            count: this.particleCount(12),
+            speed: 120,
+            life: 0.4,
+            size: 3,
+            color: this.dustColor(),
+            gravity: 240,
+            angle: Math.PI,
+            spread: Math.PI * 0.6,
+          });
           if (this.quality?.backfire) {
             this.particles.burst({
               x: this.launchX(), y: this.groundY() - 20, count: this.particleCount(26),
@@ -635,7 +689,7 @@ export class GameRenderer {
 
   private wheelScreenX(worldX: number): number {
     const camX = this.flight ? this.flight.x * PX_PER_M : 0;
-    return this.w * 0.3 + worldX * PX_PER_M - camX;
+    return this.w * 0.42 + worldX * PX_PER_M - camX;
   }
 
   private wheelScreenY(worldY: number): number {
@@ -721,7 +775,7 @@ export class GameRenderer {
     const wx = w * 0.56 + Math.sin(this.time * 0.9) * r * 0.06;
     const wy = groundY - r * 1.05 - Math.max(0, Math.sin(this.time * 0.9)) * r * 0.05;
     this.drawRamp(ctx, wx, groundY, r);
-    this.drawPusher(ctx, ex + r * 0.7, groundY, wx, wy, r, 0.45 + Math.sin(this.time * 0.9) * 0.25, menuRpm);
+    this.drawPusher(ctx, ex + r * 0.35, groundY, wx, wy, r, 0.45 + Math.sin(this.time * 0.9) * 0.25, menuRpm);
     this.drawWheel(ctx, wx, wy, r, this.menuSpin, 0.3);
 
     // dust kicked under wheel
@@ -754,18 +808,32 @@ export class GameRenderer {
     const r = this.wheelRadius();
     const lx = this.launchX();
 
-    // Ramp + wheel during build/launch
+    // Engine + ramp + wheel during build/launch — the engine drives the pusher
+    // stick, which shoves the tyre up the ramp and THROWS it at launch.
     if (this.phase === "idle" || this.phase === "building" || this.phase === "launching") {
       this.drawRamp(ctx, lx, groundY, r);
-      // the pusher stick shoves the wheel up the ramp as RPM builds
-      const climb = this.phase === "launching" ? 1 : Math.min(1, this.rpm / 100);
+      let climb: number;
+      let extend: number;
+      let pump: number;
+      if (this.phase === "launching") {
+        // the stick loads, then SLAMS the tyre to the lip with a little overshoot
+        const slam = Math.min(1, this.launchT * 1.15);
+        const bounce = 1 + 0.16 * Math.sin(slam * Math.PI);
+        extend = slam * bounce;
+        climb = Math.min(1, extend);
+        pump = 1;
+      } else {
+        climb = Math.min(1, this.rpm / 100);
+        extend = climb;
+        pump = this.rpm / 100;
+      }
       const wx = lx + r * 0.55 + climb * r * 0.5;
       const wy = groundY - r * 1.18 - climb * r * 0.3;
-      const spin = this.rpm / 100 * 9 + this.time * 0.2;
-      const engineX = w * 0.36;
-      this.drawPusher(ctx, engineX, groundY, wx, wy, r, climb, this.phase === "launching" ? 100 : this.rpm);
-      this.drawWheel(ctx, wx, wy, r, spin, this.heat());
+      const spin = pump * 9 + this.time * (this.phase === "launching" ? 2.6 : 0.2);
+      const engineX = this.engineX();
       this.drawEngine(ctx, engineX, groundY - r * 0.32, r * 0.85, this.phase === "launching" ? 100 : this.rpm, this.heat());
+      this.drawPusher(ctx, engineX, groundY, wx, wy, r, extend, this.phase === "launching" ? 100 : this.rpm);
+      this.drawWheel(ctx, wx, wy, r, spin, this.heat());
     }
 
     // launch shockwave ring
@@ -840,7 +908,9 @@ export class GameRenderer {
     ctx.restore();
   }
 
-  /** The pusher stick: a hydraulic arm that shoves the wheel up the ramp. */
+  /** The pusher stick: a hydraulic arm bolted to the engine that shoves the tyre
+   *  up the ramp and SLAMS it off at launch. The rod pumps with RPM and the fork
+   *  head cups the tyre's back. */
   private drawPusher(
     ctx: CanvasRenderingContext2D,
     mountX: number,
@@ -851,8 +921,8 @@ export class GameRenderer {
     extend: number,
     rpm: number,
   ): void {
-    const pivotX = mountX - r * 0.28;
-    const pivotY = groundY - r * 0.32;
+    const pivotX = mountX + r * 0.35;
+    const pivotY = groundY - r * 0.3;
     const dx = wx - pivotX;
     const dy = wy - pivotY;
     const dist = Math.hypot(dx, dy);
@@ -863,80 +933,106 @@ export class GameRenderer {
 
     ctx.save();
 
-    // base plate on the ground
-    ctx.fillStyle = "#3f3222";
-    rr(ctx, pivotX - r * 0.34, groundY - r * 0.06, r * 0.68, r * 0.12, 3);
+    // ground cradle bolted behind the engine
+    ctx.fillStyle = "#3a2f20";
+    rr(ctx, pivotX - r * 0.45, groundY - r * 0.1, r * 0.9, r * 0.18, 4);
     ctx.fill();
-    // stand
     ctx.fillStyle = "#5a4630";
     ctx.beginPath();
-    ctx.moveTo(pivotX - r * 0.16, groundY - r * 0.02);
-    ctx.lineTo(pivotX + r * 0.16, groundY - r * 0.02);
-    ctx.lineTo(pivotX + r * 0.1, pivotY + r * 0.1);
-    ctx.lineTo(pivotX - r * 0.1, pivotY + r * 0.1);
+    ctx.moveTo(pivotX - r * 0.22, groundY - r * 0.06);
+    ctx.lineTo(pivotX + r * 0.22, groundY - r * 0.06);
+    ctx.lineTo(pivotX + r * 0.14, pivotY + r * 0.12);
+    ctx.lineTo(pivotX - r * 0.14, pivotY + r * 0.12);
     ctx.closePath();
     ctx.fill();
 
-    // hydraulic cylinder
-    const cylLen = Math.max(r * 0.3, dist * 0.42);
+    // hydraulic cylinder — pumps back and forth with the engine
+    const stroke = Math.max(0, Math.min(1, rpm / 100));
+    const pumpJitter = Math.sin(this.time * (7 + stroke * 30)) * stroke * r * 0.05;
+    const cylLen = Math.max(r * 0.32, dist * 0.4);
     ctx.save();
     ctx.translate(pivotX, pivotY);
     ctx.rotate(ang);
-    rr(ctx, -r * 0.07, -r * 0.14, cylLen, r * 0.28, r * 0.12);
+    rr(ctx, -r * 0.08, -r * 0.17, cylLen, r * 0.34, r * 0.14);
     ctx.fillStyle = "#8f929b";
     ctx.fill();
     ctx.strokeStyle = "rgba(0,0,0,0.35)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
+    // hydraulic line
+    ctx.strokeStyle = "#4a4a50";
+    ctx.lineWidth = Math.max(1.5, r * 0.035);
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.05, r * 0.18);
+    ctx.lineTo(cylLen * 0.5, r * 0.21);
+    ctx.stroke();
+    // polished band
     ctx.fillStyle = "#c3cbd4";
-    ctx.fillRect(cylLen * 0.35, -r * 0.1, cylLen * 0.18, r * 0.2);
+    ctx.fillRect(cylLen * 0.34, -r * 0.13, cylLen * 0.2, r * 0.26);
     ctx.restore();
 
-    // piston rod
-    const rodFrom = cylLen;
-    const rodTo = Math.max(rodFrom + r * 0.2, dist - r * 0.26);
+    // long piston rod — reaches from the cylinder to the tyre
+    const rodFrom = cylLen + pumpJitter;
+    const rodTo = Math.max(rodFrom + r * 0.22, dist - r * 0.28);
     ctx.strokeStyle = "#d7dbe2";
-    ctx.lineWidth = Math.max(3, r * 0.1);
+    ctx.lineWidth = Math.max(3, r * 0.11);
     ctx.lineCap = "round";
     ctx.beginPath();
     ctx.moveTo(pivotX + cos * rodFrom, pivotY + sin * rodFrom);
     ctx.lineTo(pivotX + cos * rodTo, pivotY + sin * rodTo);
     ctx.stroke();
 
-    // pusher head — a rubber pad pressed against the wheel's back
+    // pusher fork — a U-cradle that cups the tyre's back
     const headX = pivotX + cos * rodTo;
     const headY = pivotY + sin * rodTo;
-    const vib = rpm > 0 ? Math.sin(this.time * 40) * Math.min(3, rpm * 0.03) : 0;
+    const vib = rpm > 0 ? Math.sin(this.time * 42) * Math.min(2.5, rpm * 0.025) : 0;
     ctx.save();
     ctx.translate(headX - sin * vib, headY + cos * vib);
     ctx.rotate(ang);
-    rr(ctx, -r * 0.15, -r * 0.3, r * 0.3, r * 0.6, r * 0.12);
-    ctx.fillStyle = "#2b2b2e";
+    rr(ctx, -r * 0.14, -r * 0.38, r * 0.3, r * 0.76, r * 0.1);
+    ctx.fillStyle = "#2e2e33";
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
+    ctx.fillStyle = "#3d3d44";
+    rr(ctx, r * 0.08, -r * 0.4, r * 0.2, r * 0.16, r * 0.06);
+    ctx.fill();
+    rr(ctx, r * 0.08, r * 0.24, r * 0.2, r * 0.16, r * 0.06);
+    ctx.fill();
     ctx.restore();
+
+    // slam flash — ring bursting from the head at full extension
+    if (extend > 0.9) {
+      const k = Math.min(1, (extend - 0.9) / 0.1);
+      ctx.globalAlpha = (1 - k) * 0.55;
+      ctx.strokeStyle = "#ffd54a";
+      ctx.lineWidth = 2 + k * 3;
+      ctx.beginPath();
+      ctx.arc(headX, headY, r * (0.25 + k * 0.65), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
 
     // head glow when the pusher is slammed forward (launch)
     if (extend > 0.8) {
-      const glowA = Math.min(0.55, (extend - 0.8) * 2.75);
-      const g = ctx.createRadialGradient(headX, headY, 2, headX, headY, r * 0.45);
+      const glowA = Math.min(0.5, (extend - 0.8) * 2.5);
+      const g = ctx.createRadialGradient(headX, headY, 2, headX, headY, r * 0.5);
       g.addColorStop(0, `rgba(255,170,60,${glowA})`);
       g.addColorStop(1, "rgba(255,170,60,0)");
       ctx.fillStyle = g;
-      ctx.fillRect(headX - r * 0.45, headY - r * 0.45, r * 0.9, r * 0.9);
+      ctx.fillRect(headX - r * 0.5, headY - r * 0.5, r, r);
     }
 
-    // zone indicator light on the stand
+    // zone indicator light on the cradle
     const lightCol = rpm >= 85 ? "#f59e0b" : rpm >= 60 ? "#22c55e" : rpm >= 30 ? "#38bdf8" : "#64748b";
     ctx.fillStyle = lightCol + "55";
     ctx.beginPath();
-    ctx.arc(pivotX - r * 0.2, groundY - r * 0.12, r * 0.11, 0, Math.PI * 2);
+    ctx.arc(pivotX + r * 0.3, groundY - r * 0.15, r * 0.12, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = lightCol;
     ctx.beginPath();
-    ctx.arc(pivotX - r * 0.2, groundY - r * 0.12, r * 0.055, 0, Math.PI * 2);
+    ctx.arc(pivotX + r * 0.3, groundY - r * 0.15, r * 0.06, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
