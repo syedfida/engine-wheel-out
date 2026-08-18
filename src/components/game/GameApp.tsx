@@ -36,27 +36,27 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 40, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.95 }}
-      className={cn("w-full rounded-2xl border px-4 py-3 backdrop-blur-md", TOAST_STYLES[toast.kind])}
+      initial={{ opacity: 0, x: 48, scale: 0.92 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 24, scale: 0.95 }}
+      className={cn("w-full rounded-xl border px-3 py-1.5 backdrop-blur-md shadow-lg", TOAST_STYLES[toast.kind])}
     >
-      <div className="flex items-center gap-2">
-        <span className="text-lg">
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm leading-none">
           {toast.kind === "achievement" ? "🏆" : toast.kind === "mission" ? "📜" : toast.kind === "levelup" ? "⬆️" : toast.kind === "record" ? "🌟" : toast.kind === "location" ? "🗺️" : "✨"}
         </span>
         <div className="min-w-0 flex-1">
           <div
             className={cn(
-              "truncate font-arcade text-xs tracking-wide",
+              "truncate font-arcade text-[10px] leading-tight tracking-wide",
               toast.kind === "levelup" ? "text-amber-300" : "text-white",
             )}
           >
             {toast.title}
           </div>
-          {toast.subtitle && <div className="truncate text-[10px] text-white/65">{toast.subtitle}</div>}
+          {toast.subtitle && <div className="truncate text-[9px] leading-tight text-white/65">{toast.subtitle}</div>}
         </div>
-        {toast.reward && <div className="shrink-0 text-[10px] font-extrabold text-amber-200">{toast.reward}</div>}
+        {toast.reward && <div className="shrink-0 text-[9px] font-extrabold leading-tight text-amber-200">{toast.reward}</div>}
       </div>
     </motion.div>
   );
@@ -65,10 +65,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
 function ToastStack() {
   const { toasts, dismissToast } = useGame();
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[60] flex flex-col items-center gap-2 px-4">
+    <div className="pointer-events-none fixed right-3 top-[calc(env(safe-area-inset-top)+3.6rem)] z-[60] flex w-56 flex-col items-end gap-1.5">
       <AnimatePresence>
         {toasts.map((t) => (
-          <div key={t.id} className="w-full max-w-sm">
+          <div key={t.id} className="w-full">
             <ToastItem toast={t} onDismiss={dismissToast} />
           </div>
         ))}
